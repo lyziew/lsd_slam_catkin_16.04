@@ -23,12 +23,11 @@
 #include "qfiledialog.h"
 #include "qcoreapplication.h"
 #include <stdio.h>
-#include "settings.h"
+#include "Settings.h"
 #include "ros/package.h"
 
 #include <zlib.h>
 #include <iostream>
-
 
 #include <GL/glx.h>
 #include <GL/gl.h>
@@ -44,23 +43,21 @@
 
 PointCloudViewer::PointCloudViewer()
 {
-	setPathKey(Qt::Key_0,0);
-	setPathKey(Qt::Key_1,1);
-	setPathKey(Qt::Key_2,2);
-	setPathKey(Qt::Key_3,3);
-	setPathKey(Qt::Key_4,4);
-	setPathKey(Qt::Key_5,5);
-	setPathKey(Qt::Key_6,6);
-	setPathKey(Qt::Key_7,7);
-	setPathKey(Qt::Key_8,8);
-	setPathKey(Qt::Key_9,9);
-
+	setPathKey(Qt::Key_0, 0);
+	setPathKey(Qt::Key_1, 1);
+	setPathKey(Qt::Key_2, 2);
+	setPathKey(Qt::Key_3, 3);
+	setPathKey(Qt::Key_4, 4);
+	setPathKey(Qt::Key_5, 5);
+	setPathKey(Qt::Key_6, 6);
+	setPathKey(Qt::Key_7, 7);
+	setPathKey(Qt::Key_8, 8);
+	setPathKey(Qt::Key_9, 9);
 
 	currentCamDisplay = 0;
 	graphDisplay = 0;
 
-
-	for(int i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 	{
 		KFexists[i] = 0;
 		KFautoPlayIdx[i] = -1;
@@ -74,19 +71,17 @@ PointCloudViewer::PointCloudViewer()
 	reset();
 }
 
-
 PointCloudViewer::~PointCloudViewer()
 {
 	delete currentCamDisplay;
 	delete graphDisplay;
 }
 
-
 void PointCloudViewer::reset()
 {
-	if(currentCamDisplay != 0)
+	if (currentCamDisplay != 0)
 		delete currentCamDisplay;
-	if(graphDisplay != 0)
+	if (graphDisplay != 0)
 		delete graphDisplay;
 
 	currentCamDisplay = new KeyFrameDisplay();
@@ -95,19 +90,18 @@ void PointCloudViewer::reset()
 	KFcurrent = 0;
 	KFLastPCSeq = -1;
 
-	resetRequested=false;
+	resetRequested = false;
 
-	save_folder = ros::package::getPath("lsd_slam_viewer")+"/save/";
+	save_folder = ros::package::getPath("lsd_slam_viewer") + "/save/";
 	localMsBetweenSaves = 1;
 	simMsBetweenSaves = 1;
 	lastCamID = -1;
 	lastAnimTime = lastCamTime = lastSaveTime = 0;
 	char buf[500];
-	snprintf(buf,500,"rm -rf %s",save_folder.c_str());
+	snprintf(buf, 500, "rm -rf %s", save_folder.c_str());
 	int k = system(buf);
-	snprintf(buf,500,"mkdir %s",save_folder.c_str());
+	snprintf(buf, 500, "mkdir %s", save_folder.c_str());
 	k += system(buf);
-
 
 	assert(k != -42);
 
@@ -122,9 +116,9 @@ void PointCloudViewer::addFrameMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
 {
 	meddleMutex.lock();
 
-	if(!msg->isKeyframe)
+	if (!msg->isKeyframe)
 	{
-		if(currentCamDisplay->id > msg->id)
+		if (currentCamDisplay->id > msg->id)
 		{
 			printf("detected backward-jump in id (%d to %d), resetting!\n", currentCamDisplay->id, msg->id);
 			resetRequested = true;
@@ -148,7 +142,6 @@ void PointCloudViewer::addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr msg
 	meddleMutex.unlock();
 }
 
-
 void PointCloudViewer::init()
 {
 	setAnimationPeriod(30);
@@ -164,42 +157,36 @@ void PointCloudViewer::draw()
 {
 	meddleMutex.lock();
 
-
-	if(resetRequested)
+	if (resetRequested)
 	{
 		reset();
 		resetRequested = false;
 	}
 
-
 	glPushMatrix();
 
-
-	if(animationPlaybackEnabled)
+	if (animationPlaybackEnabled)
 	{
 		double tm = ros::Time::now().toSec() - animationPlaybackTime;
 
-		if(tm > kfInt->lastTime())
+		if (tm > kfInt->lastTime())
 		{
 			animationPlaybackEnabled = false;
 			tm = kfInt->lastTime();
 		}
 
-		if(tm < kfInt->firstTime())
+		if (tm < kfInt->firstTime())
 			tm = kfInt->firstTime();
 
 		printf("anim at %.2f (%.2f to %.2f)\n", tm, kfInt->firstTime(), kfInt->lastTime());
 
-
 		kfInt->interpolateAtTime(tm);
-		camera()->frame()->setFromMatrix(kfInt->frame()-> matrix());
-
-
+		camera()->frame()->setFromMatrix(kfInt->frame()->matrix());
 
 		double accTime = 0;
-		for(unsigned int i=0;i<animationList.size();i++)
+		for (unsigned int i = 0; i < animationList.size(); i++)
 		{
-			if(tm >= accTime && tm < accTime+animationList[i].duration && animationList[i].isFix)
+			if (tm >= accTime && tm < accTime + animationList[i].duration && animationList[i].isFix)
 			{
 				camera()->frame()->setFromMatrix(animationList[i].frame.matrix());
 
@@ -209,16 +196,15 @@ void PointCloudViewer::draw()
 			accTime += animationList[i].duration;
 		}
 
-
 		accTime = 0;
-		AnimationObject* lastAnimObj = 0;
-		for(unsigned int i=0;i<animationList.size();i++)
+		AnimationObject *lastAnimObj = 0;
+		for (unsigned int i = 0; i < animationList.size(); i++)
 		{
 			accTime += animationList[i].duration;
-			if(animationList[i].isSettings && accTime <= tm)
+			if (animationList[i].isSettings && accTime <= tm)
 				lastAnimObj = &(animationList[i]);
 		}
-		if(lastAnimObj != 0)
+		if (lastAnimObj != 0)
 		{
 			absDepthVarTH = lastAnimObj->absTH;
 			scaledDepthVarTH = lastAnimObj->scaledTH;
@@ -229,55 +215,43 @@ void PointCloudViewer::draw()
 		}
 	}
 
+	if (showCurrentCamera)
+		currentCamDisplay->drawCam(2 * lineTesselation, 0);
 
-
-	if(showCurrentCamera)
-		currentCamDisplay->drawCam(2*lineTesselation, 0);
-
-	if(showCurrentPointcloud)
+	if (showCurrentPointcloud)
 		currentCamDisplay->drawPC(pointTesselation, 1);
 
-
 	graphDisplay->draw();
-
 
 	glPopMatrix();
 
 	meddleMutex.unlock();
 
-
-
-
-	if(saveAllVideo)
+	if (saveAllVideo)
 	{
 		double span = ros::Time::now().toSec() - lastRealSaveTime;
-		if(span > 0.4)
+		if (span > 0.4)
 		{
 			setSnapshotQuality(100);
 
-			printf("saved (img %d @ time %lf, saveHZ %f)!\n", lastCamID, lastAnimTime, 1.0/localMsBetweenSaves);
+			printf("saved (img %d @ time %lf, saveHZ %f)!\n", lastCamID, lastAnimTime, 1.0 / localMsBetweenSaves);
 
 			char buf[500];
-			snprintf(buf,500,"%s%lf.png",save_folder.c_str(),  ros::Time::now().toSec());
+			snprintf(buf, 500, "%s%lf.png", save_folder.c_str(), ros::Time::now().toSec());
 			saveSnapshot(QString(buf));
 			lastRealSaveTime = ros::Time::now().toSec();
 		}
-
-
 	}
 }
 
 void PointCloudViewer::keyReleaseEvent(QKeyEvent *e)
-  {
-
-  }
-
+{
+}
 
 void PointCloudViewer::setToVideoSize()
 {
-	this->setFixedSize(1600,900);
+	this->setFixedSize(1600, 900);
 }
-
 
 void PointCloudViewer::remakeAnimation()
 {
@@ -285,146 +259,138 @@ void PointCloudViewer::remakeAnimation()
 	kfInt = new qglviewer::KeyFrameInterpolator(new qglviewer::Frame());
 	std::sort(animationList.begin(), animationList.end());
 
-	float tm=0;
-	for(unsigned int i=0;i<animationList.size();i++)
+	float tm = 0;
+	for (unsigned int i = 0; i < animationList.size(); i++)
 	{
-	  if(!animationList[i].isSettings)
-	  {
-		  kfInt->addKeyFrame(&animationList[i].frame, tm);
-		  tm += animationList[i].duration;
-	  }
+		if (!animationList[i].isSettings)
+		{
+			kfInt->addKeyFrame(&animationList[i].frame, tm);
+			tm += animationList[i].duration;
+		}
 	}
 
 	printf("made animation with %d keyframes, spanning %f s!\n", kfInt->numberOfKeyFrames(), tm);
 }
 
 void PointCloudViewer::keyPressEvent(QKeyEvent *e)
-  {
-    switch (e->key())
-    {
-      case Qt::Key_S :
-    	    setToVideoSize();
-    	  break;
+{
+	switch (e->key())
+	{
+	case Qt::Key_S:
+		setToVideoSize();
+		break;
 
-      case Qt::Key_R :
-    	    resetRequested = true;
+	case Qt::Key_R:
+		resetRequested = true;
 
-    	  break;
+		break;
 
-      case Qt::Key_T:	// add settings item
-    	  meddleMutex.lock();
-    	  animationList.push_back(AnimationObject(true, lastAnimTime, 0));
-    	  meddleMutex.unlock();
-    	  printf("added St: %s\n", animationList.back().toString().c_str());
+	case Qt::Key_T: // add settings item
+		meddleMutex.lock();
+		animationList.push_back(AnimationObject(true, lastAnimTime, 0));
+		meddleMutex.unlock();
+		printf("added St: %s\n", animationList.back().toString().c_str());
 
-    	  break;
+		break;
 
-      case Qt::Key_K:	// add keyframe item
-    	  meddleMutex.lock();
+	case Qt::Key_K: // add keyframe item
+		meddleMutex.lock();
 
+		qreal x, y, z;
+		camera()->frame()->getPosition(x, y, z);
+		animationList.push_back(AnimationObject(false, lastAnimTime, 2, qglviewer::Frame(qglviewer::Vec(0, 0, 0), camera()->frame()->orientation())));
+		animationList.back().frame.setPosition(x, y, z);
+		meddleMutex.unlock();
+		printf("added KF: %s\n", animationList.back().toString().c_str());
 
-    	  qreal x,y,z;
-    	  camera()->frame()->getPosition(x,y,z);
-    	  animationList.push_back(AnimationObject(false, lastAnimTime, 2, qglviewer::Frame(qglviewer::Vec(0,0,0), camera()->frame()->orientation())));
-    	  animationList.back().frame.setPosition(x,y,z);
-    	  meddleMutex.unlock();
-    	  printf("added KF: %s\n", animationList.back().toString().c_str());
+		remakeAnimation();
 
+		break;
 
+	case Qt::Key_I: // reset animation list
+		meddleMutex.lock();
+		animationList.clear();
+		meddleMutex.unlock();
+		printf("resetted animation list!\n");
 
-    	  remakeAnimation();
+		remakeAnimation();
 
-    	  break;
+		break;
 
-      case Qt::Key_I :	// reset animation list
-			meddleMutex.lock();
-			animationList.clear();
-			meddleMutex.unlock();
-			printf("resetted animation list!\n");
+	case Qt::Key_F: // save list
+	{
+		meddleMutex.lock();
+		std::ofstream myfile;
+		myfile.open("animationPath.txt");
+		for (unsigned int i = 0; i < animationList.size(); i++)
+		{
+			myfile << animationList[i].toString() << "\n";
+		}
+		myfile.close();
+		meddleMutex.unlock();
 
-			remakeAnimation();
+		printf("saved animation list (%d items)!\n", (int)animationList.size());
+	}
+	break;
 
-    	  break;
+	case Qt::Key_L: // load list
+	{
+		meddleMutex.lock();
+		animationList.clear();
 
+		std::ifstream myfile;
+		std::string line;
+		myfile.open("animationPath.txt");
 
-      case Qt::Key_F :	// save list
-      {
-			meddleMutex.lock();
-			std::ofstream myfile;
-			myfile.open ("animationPath.txt");
-			for(unsigned int i=0;i<animationList.size();i++)
+		if (myfile.is_open())
+		{
+			while (getline(myfile, line))
 			{
-				myfile << animationList[i].toString() << "\n";
+				if (!(line[0] == '#'))
+					animationList.push_back(AnimationObject(line));
 			}
 			myfile.close();
-			meddleMutex.unlock();
+		}
+		else
+			std::cout << "Unable to open file";
+		myfile.close();
+		meddleMutex.unlock();
 
-			printf("saved animation list (%d items)!\n", (int)animationList.size());
-      }
-    	  break;
+		printf("loaded animation list! (%d items)!\n", (int)animationList.size());
+		remakeAnimation();
+	}
+	break;
 
+	case Qt::Key_A:
+		if (customAnimationEnabled)
+			printf("DISABLE custom animation!\n)");
+		else
+			printf("ENABLE custom animation!\n");
+		customAnimationEnabled = !customAnimationEnabled;
+		break;
 
-      case Qt::Key_L :	// load list
-      {
-			meddleMutex.lock();
-			animationList.clear();
+	case Qt::Key_O:
+		if (animationPlaybackEnabled)
+		{
+			animationPlaybackEnabled = false;
+		}
+		else
+		{
+			animationPlaybackEnabled = true;
+			animationPlaybackTime = ros::Time::now().toSec();
+		}
+		break;
 
-			std::ifstream myfile;
-			std::string line;
-			myfile.open ("animationPath.txt");
+	case Qt::Key_P:
+		graphDisplay->flushPointcloud = true;
+		break;
 
-			if (myfile.is_open())
-			{
-				while ( getline (myfile,line) )
-				{
-					if(!(line[0] == '#'))
-						animationList.push_back(AnimationObject(line));
-				}
-				myfile.close();
-			}
-			else
-				std::cout << "Unable to open file";
-			myfile.close();
-			meddleMutex.unlock();
+	case Qt::Key_W:
+		graphDisplay->printNumbers = true;
+		break;
 
-			printf("loaded animation list! (%d items)!\n", (int)animationList.size());
-			remakeAnimation();
-      }
-    	  break;
-
-
-      case Qt::Key_A:
-    	  if(customAnimationEnabled)
-    		  printf("DISABLE custom animation!\n)");
-    	  else
-    		  printf("ENABLE custom animation!\n");
-    	  customAnimationEnabled = !customAnimationEnabled;
-    	  break;
-
-      case Qt::Key_O:
-    	  if(animationPlaybackEnabled)
-    	  {
-    		  animationPlaybackEnabled=false;
-    	  }
-    	  else
-    	  {
-    		  animationPlaybackEnabled = true;
-    		  animationPlaybackTime = ros::Time::now().toSec();
-    	  }
-      	  break;
-
-
-      case Qt::Key_P:
-    	  graphDisplay->flushPointcloud = true;
-    	  break;
-
-      case Qt::Key_W:
-    	  graphDisplay->printNumbers = true;
-    	  break;
-
-      default:
-    	  QGLViewer::keyPressEvent(e);
-    	  break;
-    }
-  }
-
+	default:
+		QGLViewer::keyPressEvent(e);
+		break;
+	}
+}

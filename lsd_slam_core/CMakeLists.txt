@@ -10,11 +10,6 @@ project(lsd_slam_core)
 set(CMAKE_BUILD_TYPE Release)
 
 
-# Build with OpenCV3 in /opt/ros/kinetic/
-set(OpenCV_INCLUDE_DIRS /opt/ros/kinetic/include/opencv-3.3.1)
-set(OpenCV_LIBS /opt/ros/kinetic/lib/libopencv_core3.so.3.3.1 /opt/ros/kinetic/lib/libopencv_imgproc3.so.3.3.1 /opt/ros/kinetic/lib/libopencv_highgui3.so.3.3.1 /opt/ros/kinetic/lib/libopencv_calib3d3.so.3.3.1)
-set(OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1)
-
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   dynamic_reconfigure
@@ -27,11 +22,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen REQUIRED)
 find_package(X11 REQUIRED)
+set(OpenCV_DIR /usr/local/share/OpenCV)
+find_package(OpenCV REQUIRED)
 include(cmake/FindG2O.cmake)
 include(cmake/FindSuiteParse.cmake)
-
-# Build with OpenCV3 in /opt/ros/kinetic/
-find_package(${OpenCV_INCLUDE_DIRS})
 
 message("-- CHOLMOD_INCLUDE_DIR : " ${CHOLMOD_INCLUDE_DIR})
 message("-- CSPARSE_INCLUDE_DIR : " ${CSPARSE_INCLUDE_DIR})
@@ -105,7 +99,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
 # build shared library.
 add_library(lsdslam SHARED ${SOURCE_FILES})
 target_link_libraries(lsdslam ${FABMAP_LIB} ${G2O_LIBRARIES} ${catkin_LIBRARIES} csparse cxsparse X11 ${OpenCV_LIBS})
@@ -121,6 +114,9 @@ target_link_libraries(live_slam lsdslam ${catkin_LIBRARIES} ${G2O_LIBRARIES})
 add_executable(dataset src/main_on_images.cpp)
 target_link_libraries(dataset lsdslam ${catkin_LIBRARIES} ${G2O_LIBRARIES})
 
+add_dependencies(lsdslam lsd_slam_viewer_generate_messages_cpp)
+add_dependencies(live_slam lsd_slam_viewer_generate_messages_cpp)
+add_dependencies(dataset lsd_slam_viewer_generate_messages_cpp)
 # TODO add INSTALL
 
 

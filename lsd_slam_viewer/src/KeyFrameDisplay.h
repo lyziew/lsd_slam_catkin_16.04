@@ -19,16 +19,18 @@
 */
 
 #pragma once
+#ifndef KEYFRAME_DISPLAY_H
+#define KEYFRAME_DISPLAY_H
 
-#undef Success
-#include <Eigen/Core>
-
-#include "QGLViewer/qglviewer.h"
 #include "lsd_slam_viewer/keyframeMsg.h"
 #include "sophus/sim3.hpp"
-
-#include <sstream>
-#include <fstream>
+#include <Eigen/Core>
+#include <stdint.h>
+#include <stdio.h>
+#include <vector>
+#include <pangolin/pangolin.h>
+using namespace std;
+typedef unsigned char uchar;
 
 struct MyVertex
 {
@@ -56,7 +58,7 @@ public:
 
 	void setFrom(lsd_slam_viewer::keyframeMsgConstPtr msg);
 	void drawCam(float lineWidth = 1, float* color = 0);
-	void drawPC(float pointSize = 1, float alpha = 1);
+	void drawPC(float pointSize = 1, bool alpha = 1);
 	void refreshPC();
 
 	int flushPC(std::ofstream* f);
@@ -65,9 +67,6 @@ public:
 
 	int id;
 	double time;
-
-	int totalPoints, displayedPoints;
-
 
 	// camera pose
 	// may be updated by kf-graph.
@@ -87,17 +86,8 @@ private:
 
 	// pointcloud data & respective buffer
 	InputPointDense* originalInput;
-
-
-	// buffer & how many
-	GLuint vertexBufferId;
-	int vertexBufferNumPoints;
-
-
-	bool vertexBufferIdValid;	// true if the vertixBufferID is valid (doesnt mean the data in there is still valid)
-	bool glBuffersValid;		// true if the vertexBufferID contains valid data
-
+	vector<MyVertex> points;
 };
 
-
+#endif /* KEYFRAME_DISPLAY_H */
 

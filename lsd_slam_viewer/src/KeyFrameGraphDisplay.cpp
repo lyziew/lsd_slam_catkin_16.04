@@ -20,13 +20,10 @@
 
 
 #include "KeyFrameGraphDisplay.h"
-#include "KeyFrameDisplay.h"
-#include "settings.h"
+#include "Settings.h"
+#include "ros/package.h"
 #include <sstream>
 #include <fstream>
-
-#include "ros/package.h"
-
 KeyFrameGraphDisplay::KeyFrameGraphDisplay()
 {
 	flushPointcloud = false;
@@ -42,9 +39,6 @@ KeyFrameGraphDisplay::~KeyFrameGraphDisplay()
 
 void KeyFrameGraphDisplay::draw()
 {
-	dataMutex.lock();
-	numRefreshedAlready = 0;
-
 	// draw keyframes
 	float color[3] = {0,0,1};
 	for(unsigned int i=0;i<keyframes.size();i++)
@@ -57,63 +51,62 @@ void KeyFrameGraphDisplay::draw()
 	}
 
 
-	if(flushPointcloud)
-	{
+	// if(flushPointcloud)
+	// {
 
-		printf("Flushing Pointcloud to %s!\n", (ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
-		std::ofstream f((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
-		int numpts = 0;
-		for(unsigned int i=0;i<keyframes.size();i++)
-		{
-			if((int)i > cutFirstNKf)
-				numpts += keyframes[i]->flushPC(&f);
-		}
-		f.flush();
-		f.close();
+	// 	printf("Flushing Pointcloud to %s!\n", (ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+	// 	std::ofstream f((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+	// 	int numpts = 0;
+	// 	for(unsigned int i=0;i<keyframes.size();i++)
+	// 	{
+	// 		if((int)i > cutFirstNKf)
+	// 			numpts += keyframes[i]->flushPC(&f);
+	// 	}
+	// 	f.flush();
+	// 	f.close();
 
-		std::ofstream f2((ros::package::getPath("lsd_slam_viewer")+"/pc.ply").c_str());
-		f2 << std::string("ply\n");
-		f2 << std::string("format binary_little_endian 1.0\n");
-		f2 << std::string("element vertex ") << numpts << std::string("\n");
-		f2 << std::string("property float x\n");
-		f2 << std::string("property float y\n");
-		f2 << std::string("property float z\n");
-		f2 << std::string("property float intensity\n");
-		f2 << std::string("end_header\n");
+	// 	std::ofstream f2((ros::package::getPath("lsd_slam_viewer")+"/pc.ply").c_str());
+	// 	f2 << std::string("ply\n");
+	// 	f2 << std::string("format binary_little_endian 1.0\n");
+	// 	f2 << std::string("element vertex ") << numpts << std::string("\n");
+	// 	f2 << std::string("property float x\n");
+	// 	f2 << std::string("property float y\n");
+	// 	f2 << std::string("property float z\n");
+	// 	f2 << std::string("property float intensity\n");
+	// 	f2 << std::string("end_header\n");
 
-		std::ifstream f3((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
-		while(!f3.eof()) f2.put(f3.get());
+	// 	std::ifstream f3((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+	// 	while(!f3.eof()) f2.put(f3.get());
 
-		f2.close();
-		f3.close();
+	// 	f2.close();
+	// 	f3.close();
 
-		system(("rm "+ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
-		flushPointcloud = false;
-		printf("Done Flushing Pointcloud with %d points!\n", numpts);
+	// 	system(("rm "+ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+	// 	flushPointcloud = false;
+	// 	printf("Done Flushing Pointcloud with %d points!\n", numpts);
 
-	}
-
-
-	if(printNumbers)
-	{
-		int totalPoint = 0;
-		int visPoints = 0;
-		for(unsigned int i=0;i<keyframes.size();i++)
-		{
-			totalPoint += keyframes[i]->totalPoints;
-			visPoints += keyframes[i]->displayedPoints;
-		}
-
-		printf("Have %d points, %d keyframes, %d constraints. Displaying %d points.\n",
-				totalPoint, (int)keyframes.size(), (int)constraints.size(), visPoints);
-		printNumbers = false;
-	}
+	// }
 
 
+	// if(printNumbers)
+	// {
+	// 	int totalPoint = 0;
+	// 	int visPoints = 0;
+	// 	for(unsigned int i=0;i<keyframes.size();i++)
+	// 	{
+	// 		totalPoint += keyframes[i]->totalPoints;
+	// 		visPoints += keyframes[i]->displayedPoints;
+	// 	}
 
+	// 	printf("Have %d points, %d keyframes, %d constraints. Displaying %d points.\n",
+	// 			totalPoint, (int)keyframes.size(), (int)constraints.size(), visPoints);
+	// 	printNumbers = false;
+	// }
+}
 
-	if(showConstraints)
-	{
+void KeyFrameGraphDisplay::drawGraph()
+{
+	glPushMatrix();
 		// draw constraints
 		glLineWidth(lineTesselation);
 		glBegin(GL_LINES);
@@ -134,14 +127,11 @@ void KeyFrameGraphDisplay::draw()
 
 		}
 		glEnd();
-	}
-
-	dataMutex.unlock();
+	glPopMatrix();
 }
 
 void KeyFrameGraphDisplay::addMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
 {
-	dataMutex.lock();
 	if(keyframesByID.count(msg->id) == 0)
 	{
 		KeyFrameDisplay* disp = new KeyFrameDisplay();
@@ -152,13 +142,10 @@ void KeyFrameGraphDisplay::addMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
 	}
 
 	keyframesByID[msg->id]->setFrom(msg);
-	dataMutex.unlock();
 }
 
 void KeyFrameGraphDisplay::addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr msg)
 {
-	dataMutex.lock();
-
 	constraints.resize(msg->numConstraints);
 	assert(msg->constraintsData.size() == sizeof(GraphConstraint)*msg->numConstraints);
 	GraphConstraint* constraintsIn = (GraphConstraint*)msg->constraintsData.data();
@@ -201,8 +188,5 @@ void KeyFrameGraphDisplay::addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr
 		else
 			memcpy(keyframesByID[graphPoses[i].id]->camToWorld.data(), graphPoses[i].camToWorld, 7*sizeof(float));
 	}
-
-	dataMutex.unlock();
-
 //	printf("graph update: %d constraints, %d poses\n", msg->numConstraints, msg->numFrames);
 }

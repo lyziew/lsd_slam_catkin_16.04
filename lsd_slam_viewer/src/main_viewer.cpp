@@ -21,13 +21,11 @@
 
 #include "ros/ros.h"
 #include "boost/thread.hpp"
-#include "settings.h"
-#include "PointCloudViewer.h"
+#include "Settings.h"
+#include "Viewer.h"
 
 #include <dynamic_reconfigure/server.h>
 #include "lsd_slam_viewer/LSDSLAMViewerParamsConfig.h"
-#include <qapplication.h>
-
 
 #include "lsd_slam_viewer/keyframeGraphMsg.h"
 #include "lsd_slam_viewer/keyframeMsg.h"
@@ -39,7 +37,7 @@
 #include "rosbag/view.h"
 
 
-PointCloudViewer* viewer = 0;
+Viewer* viewer = 0;
 
 
 void dynConfCb(lsd_slam_viewer::LSDSLAMViewerParamsConfig &config, uint32_t level)
@@ -68,16 +66,13 @@ void dynConfCb(lsd_slam_viewer::LSDSLAMViewerParamsConfig &config, uint32_t leve
 
 void frameCb(lsd_slam_viewer::keyframeMsgConstPtr msg)
 {
-
-	if(msg->time > lastFrameTime) return;
-
 	if(viewer != 0)
-		viewer->addFrameMsg(msg);
+		viewer->AddFrameMsg(msg);
 }
 void graphCb(lsd_slam_viewer::keyframeGraphMsgConstPtr msg)
 {
 	if(viewer != 0)
-		viewer->addGraphMsg(msg);
+		viewer->AddGraphMsg(msg);
 }
 
 
@@ -85,9 +80,6 @@ void graphCb(lsd_slam_viewer::keyframeGraphMsgConstPtr msg)
 void rosThreadLoop( int argc, char** argv )
 {
 	printf("Started ROS thread\n");
-
-	//glutInit(&argc, argv);
-
 	ros::init(argc, argv, "viewer");
 	ROS_INFO("lsd_slam_viewer started");
 
@@ -127,7 +119,6 @@ void rosFileLoop( int argc, char** argv )
 
 	rosbag::View view(bag, rosbag::TopicQuery(topics));
 
-	 //for(rosbag::MessageInstance const m = view.begin(); m < view.end(); ++m)
 	 BOOST_FOREACH(rosbag::MessageInstance const m, view)
 	 {
 
@@ -151,26 +142,8 @@ void rosFileLoop( int argc, char** argv )
 
 int main( int argc, char** argv )
 {
-
-
-	printf("Started QApplication thread\n");
-	// Read command lines arguments.
-	QApplication application(argc,argv);
-
 	// Instantiate the viewer.
-	viewer = new PointCloudViewer();
-
-
-	#if QT_VERSION < 0x040000
-		// Set the viewer as the application main widget.
-		application.setMainWidget(viewer);
-	#else
-		viewer->setWindowTitle("PointCloud Viewer");
-	#endif
-
-	// Make the viewer window visible on screen.
-	viewer->show();
-
+	viewer = new Viewer();
 	boost::thread rosThread;
 
 	if(argc > 1)
@@ -183,9 +156,8 @@ int main( int argc, char** argv )
 		rosThread = boost::thread(rosThreadLoop, argc, argv);
 	}
 
-
-	application.exec();
-
+	viewer->Run();
+	
 	printf("Shutting down... \n");
 	ros::shutdown();
 	rosThread.join();

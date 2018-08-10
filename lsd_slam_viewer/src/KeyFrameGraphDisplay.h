@@ -20,13 +20,14 @@
 
 
 
-#ifndef KEYFRAMEGRAPHDISPLAY_H_
-#define KEYFRAMEGRAPHDISPLAY_H_
+#ifndef KEYFRAME_GRAPH_DISPLAY_H
+#define KEYFRAME_GRAPH_DISPLAY_H
 
 
 #include "lsd_slam_viewer/keyframeGraphMsg.h"
 #include "lsd_slam_viewer/keyframeMsg.h"
 #include "boost/thread.hpp"
+#include "KeyFrameDisplay.h"
 
 class KeyFrameDisplay;
 
@@ -59,7 +60,7 @@ public:
 	virtual ~KeyFrameGraphDisplay();
 
 	void draw();
-
+    void drawGraph();
 	void addMsg(lsd_slam_viewer::keyframeMsgConstPtr msg);
 	void addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr msg);
 
@@ -71,9 +72,6 @@ private:
 	std::map<int, KeyFrameDisplay*> keyframesByID;
 	std::vector<KeyFrameDisplay*> keyframes;
 	std::vector<GraphConstraintPt> constraints;
-
-	boost::mutex dataMutex;
-
 };
 
-#endif /* KEYFRAMEGRAPHDISPLAY_H_ */
+#endif /* KEYFRAME_GRAPH_DISPLAY_H */

@@ -35,12 +35,13 @@ void Viewer::Run()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     //新建按钮和选择框
-    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
+    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(200));
     //第一个参数为按钮的名字，第二个为默认状态，第三个为是否有选择框
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
+    pangolin::Var<bool> menuExit("menu.Exit",false,false);
 
     // 定义相机投影模型：ProjectionMatrix(w, h, fu, fv, u0, v0, zNear, zFar)
     // 定义观测方位向量：观测点位置：(mViewpointX mViewpointY mViewpointZ)
@@ -48,31 +49,28 @@ void Viewer::Run()
     //                观测的方位向量：(0.0,-1.0, 0.0)
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(1024, 768, mViewpointF, mViewpointF, 512, 389, 0.1, 1000),
+        pangolin::ProjectionMatrix(1000, 800, mViewpointF, mViewpointF, 512, 389, 0.1, 1000),
         pangolin::ModelViewLookAt(mViewpointX, mViewpointY, mViewpointZ, 0, 0, 0, 0.0, -1.0, 0.0));
     // 定义地图面板
     // 前两个参数（0.0, 1.0）表明宽度和面板纵向宽度和窗口大小相同
-    // 中间两个参数（pangolin::Attach::Pix(175), 1.0）表明右边所有部分用于显示图形
+    // 中间两个参数（pangolin::Attach::Pix(200), 1.0）表明右边所有部分用于显示图形
     // 最后一个参数（-1024.0f/768.0f）为显示长宽比
     // Add named OpenGL viewport to window and provide 3D Handler
-    pangolin::View &d_cam = pangolin::CreateDisplay()
-                                .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f / 768.0f)
+    pangolin::View &d_cam = pangolin::Display("Map")
+                                .SetBounds(pangolin::Attach::Pix(260), 1.0, pangolin::Attach::Pix(200), 1.0)
                                 .SetHandler(new pangolin::Handler3D(s_cam));
 
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-     //定义图片面板
-    // pangolin::View& rgb_image = pangolin::Display("rgb")
-    //   .SetBounds(0,0.2,0.2,0.4,1024.0f/768.0f)
-    //   .SetLock(pangolin::LockLeft, pangolin::LockBottom);
+    pangolin::View &image = pangolin::Display("IMAGE")
+                                .SetBounds(0.0,pangolin::Attach::Pix(260), pangolin::Attach::Pix(200),pangolin::Attach::Pix(600))
+                                .SetHandler(new pangolin::Handler3D(s_cam));
 
-    // pangolin::View& depth_image = pangolin::Display("depth")
-    //   .SetBounds(0,0.2,0.4,0.6,1024.0f/768.0f)
-    //   .SetLock(pangolin::LockLeft, pangolin::LockBottom);
-    // //初始化
-    // pangolin::GlTexture imageTexture(640,480,GL_RGB,false,0,GL_BGR,GL_UNSIGNED_BYTE);
-
+    pangolin::View &depth = pangolin::Display("DEPTH")
+                                .SetBounds(0.0,pangolin::Attach::Pix(260), pangolin::Attach::Pix(600), 1.0)
+                                .SetHandler(new pangolin::Handler3D(s_cam));
+   
     while (1)
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -98,12 +96,19 @@ void Viewer::Run()
             currentCamDisplay->drawPC(pointTesselation, 0);
         }
         meddleMutex.unlock();
-        
+        image.Activate();
+        pangolin::glDrawColouredCube();
+        depth.Activate();
+        pangolin::glDrawColouredCube();
         pangolin::FinishFrame();
         if(menuReset)
         {
             this->Reset();
             menuReset = false;
+        }
+        if(menuExit)
+        {
+            break;
         }
     }
 }

@@ -24,18 +24,16 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
 )
 
-find_package(OpenGL REQUIRED)
-set(QT_USE_QTOPENGL TRUE)
-set(QT_USE_QTXML TRUE)
-find_package(QGLViewer REQUIRED)
+find_package(Pangolin REQUIRED)
 find_package(Eigen REQUIRED)
+set(OpenCV_DIR /usr/local/share/OpenCV)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
 
-include_directories(${QGLVIEWER_INCLUDE_DIR}
+include_directories(
 		    ${catkin_INCLUDE_DIRS} 
 		    ${EIGEN_INCLUDE_DIR}
-		    ${QT_INCLUDES} )
+        ${Pangolin_INCLUDE_DIRS})
 
 # SSE flags
 set(CMAKE_CXX_FLAGS
@@ -52,37 +50,29 @@ generate_dynamic_reconfigure_options(
 
 # Sources files
 set(SOURCE_FILES         
-  src/PointCloudViewer.cpp
+  src/Viewer.cpp
   src/KeyFrameDisplay.cpp
   src/KeyFrameGraphDisplay.cpp
-  src/settings.cpp
+  src/Settings.cpp
 )
 
 set(HEADER_FILES     
-  src/PointCloudViewer.h
+  src/Viewer.h
   src/KeyFrameDisplay.h
   src/KeyFrameGraphDisplay.h
-  src/settings.h
+  src/Settings.h
 )
+
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/thirdparty/Sophus
 )  
 
 add_executable(viewer src/main_viewer.cpp ${SOURCE_FILES} ${HEADER_FILES})
-target_link_libraries(viewer ${QGLViewer_LIBRARIES}
-			     ${QGLVIEWER_LIBRARY} 
+target_link_libraries(viewer 
 			     ${catkin_LIBRARIES}
 			     ${Boost_LIBRARIES}
-			     ${QT_LIBRARIES}
-			     GL glut GLU
+           ${Pangolin_LIBRARIES}
 		     )
 
-#add_executable(videoStitch src/main_stitchVideos.cpp)
-#target_link_libraries(viewer ${QGLViewer_LIBRARIES}
-#			     ${QGLVIEWER_LIBRARY}
-#			     ${catkin_LIBRARIES}
-#			     ${QT_LIBRARIES}
-#			     GL glut GLU
-#		      )
-
+add_dependencies(viewer lsd_slam_viewer_generate_messages_cpp)

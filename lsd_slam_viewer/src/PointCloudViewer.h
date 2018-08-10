@@ -35,10 +35,9 @@
 class QApplication;
 
 class KeyFrameGraphDisplay;
-class CameraDisplay;
 class KeyFrameDisplay;
 
-#include "settings.h"
+#include "Settings.h"
 
 class AnimationObject
 {
